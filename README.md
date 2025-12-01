@@ -5,167 +5,188 @@ It sends scan “pulses” into the environment and maps the network from the re
 
 This tool was developed as the final project for CSCI 4449/6658 – Ethical Hacking.
 
+---
+
 ## Features
 
-    IPv4, DNS, and CIDR-based target parsing
+- IPv4, DNS, and CIDR-based target parsing  
+- Exclusion rules for out-of-scope hosts  
+- DNS resolver safety confirmation  
+- Full-port TCP service scanning (Nmap)  
+- OS detection + banner extraction  
+- Windows host identification and enumeration hooks  
+- Structured Markdown report with:  
+  - Verified information table  
+  - Unverified information  
+  - Full command output sections  
+- Modular multi-file design using Python 3.12  
 
-    Exclusion rules for out-of-scope hosts
-
-    DNS resolver safety confirmation
-
-    Full-port TCP service scanning (Nmap)
-
-    OS detection + banner extraction
-
-        Windows host identification and enumeration hooks
-
-    Structured Markdown report with:
-
-        Verified information table
-
-        Unverified information
-
-        Full command output sections
-
-Modular multi-file design using Python 3.12
+---
 
 ## Installation
 
-SonarTrace requires Python 3.12, Nmap (Network Mapper), and a few Python libraries listed in requirements.txt.
+SonarTrace requires Python 3.12, Nmap (Network Mapper), and a few Python libraries listed in `requirements.txt`.
 Follow the setup instructions for your operating system below.
 
-## Windows Installation
+---
 
-Step 1 — Install Python 3.12
+# Windows Installation
 
-Download from the official site:
-https://www.python.org/downloads/
+### Step 1 — Install Python 3.12  
+Download: https://www.python.org/downloads/  
+Make sure to check: **Add Python to PATH**
 
-Make sure to check: [✓] Add Python to PATH
+### Step 2 — Install Nmap  
+Download from: https://nmap.org/download.html  
+Enable: **Add Nmap to PATH**
 
-Step 2 — Install Nmap
-
-Download Nmap for Windows:
-https://nmap.org/download.html
-
-During installation, ensure: [✓] Add Nmap to the system PATH
-
-Step 3 — Install Git (optional but recommended)
-
+### Step 3 — Install Git (optional but recommended)  
 https://git-scm.com/download/win
 
-Step 4 — Clone the Repository
-
+### Step 4 — Clone the Repository
+```bash
 git clone https://github.com/YRBIII/SonarTrace.git
 cd SonarTrace
+````
 
-Step 5 — Create Virtual Environment
+### Step 5 — Create Virtual Environment
 
+```bash
 python -m venv venv
 venv\Scripts\activate
+```
 
-Step 6 — Install Dependencies
+### Step 6 — Install Dependencies
 
+```bash
 pip install -r requirements.txt
+```
 
-## MacOS Installation
+---
 
-Step 1 — Install Homebrew (if not installed)
+# macOS Installation
 
+### Step 1 — Install Homebrew
+
+```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-Step 2 — Install Python 3.12
+### Step 2 — Install Python 3.12
 
+```bash
 brew install python@3.12
+```
 
-Step 3 — Install Nmap
+### Step 3 — Install Nmap
 
+```bash
 brew install nmap
+```
 
-Step 4 — Clone the Repository
+### Step 4 — Clone the Repository
 
+```bash
 git clone https://github.com/YRBIII/SonarTrace.git
 cd SonarTrace
+```
 
-Step 5 — Create Virtual Environment
+### Step 5 — Create Virtual Environment
 
+```bash
 python3.12 -m venv venv
 source venv/bin/activate
+```
 
-Step 6 — Install Dependencies
+### Step 6 — Install Dependencies
 
+```bash
 pip install -r requirements.txt
+```
 
-## Linux Installation (Ubuntu/Debian/Kali)
+---
 
-Step 1 — Install Python 3.12
+# Linux Installation (Ubuntu/Debian/Kali)
 
-(Some distros already include Python 3.x, but ensure 3.12 specifically.)
+### Step 1 — Install Python 3.12
 
+```bash
 sudo apt update
 sudo apt install python3.12 python3.12-venv
+```
 
-Step 2 — Install Nmap
+### Step 2 — Install Nmap
 
+```bash
 sudo apt install nmap
+```
 
-Step 3 — Install Git
+### Step 3 — Install Git
 
+```bash
 sudo apt install git
+```
 
-Step 4 — Clone the Repository
+### Step 4 — Clone the Repository
 
+```bash
 git clone https://github.com/YRBIII/SonarTrace.git
 cd SonarTrace
+```
 
-Step 5 — Create Virtual Environment
+### Step 5 — Create Virtual Environment
 
+```bash
 python3.12 -m venv venv
 source venv/bin/activate
+```
 
-Step 6 — Install Dependencies
+### Step 6 — Install Dependencies
 
+```bash
 pip install -r requirements.txt
+```
+
+---
 
 ## Additional Dependencies (All Platforms)
 
-SonarTrace installs these automatically through requirements.txt:
+Installed automatically through `requirements.txt`:
 
-Required Python Libraries:
+* `python-dateutil`
+* `pytz`
+* `python-nmap`
+* `dnspython`
+* `pyyaml`
+* `cryptography`
 
-python-dateutil
-
-pytz
-
-python-nmap
-
-dnspython
-
-pyyaml
-
-cryptography
+---
 
 ## Optional (Windows Enumeration Features)
 
-If you want SMB + NetBIOS enumeration to work:
+If you want SMB + NetBIOS enumeration:
 
-impacket
-
-smbprotocol
-
-Install optional dependencies manually if needed:
-
+```bash
 pip install impacket smbprotocol
+```
 
-## 5. Verifying Installation
+---
 
+## Verifying Installation
+
+```bash
 python -m src --help
+```
 
 If you see the SonarTrace help menu, everything is installed correctly.
 
+---
+
 ## Help Output
+
 Below is the output of `python -m src --help`:
 
+```
 usage: sonartrace [targets] [options]
 
 SonarTrace - Network enumeration tool inspired by bat echolocation.

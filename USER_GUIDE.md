@@ -1,82 +1,136 @@
-# **SonarTrace – User Guide**
+# SonarTrace – User Guide
 
-SonarTrace is a Python 3.12 network enumeration tool inspired by bat echolocation.
+SonarTrace is a Python 3.12 network enumeration tool inspired by bat echolocation.  
 It sends scan “pulses” into a network and maps hosts, services, and operating systems based on what comes back.
 
-This guide explains how to run and use SonarTrace.
-For installation instructions specific to Windows, macOS, or Linux, see the **README.md** in the project.
+For installation instructions, see the **README.md** file.
 
-# **1. Running SonarTrace**
+---
 
-Basic command structure:
+# 1. Running SonarTrace
 
+Basic usage:
+
+```bash
 python -m src <targets>
+````
 
-### Target formats supported:
+### Supported Target Formats
 
-* Single IPv4 address
+* **Single IPv4 address**
+  Example:
+
+  ```bash
   192.168.1.10
-* DNS hostname
+  ```
+
+* **DNS hostname**
+  Example:
+
+  ```bash
   server.example.com
-* CIDR range
+  ```
+
+* **CIDR range**
+  Example:
+
+  ```bash
   192.168.1.0/24
-* Comma-separated list
+  ```
+
+* **Comma-separated list**
+  Example:
+
+  ```bash
   192.168.1.5,host1.com,10.0.0.0/24
+  ```
 
-# **2. Excluding Targets**
+---
 
-You can remove out-of-scope hosts:
+# 2. Excluding Targets
 
+To remove an IP or network from the scan scope:
+
+```bash
 python -m src "192.168.1.0/24" -e "192.168.1.10"
+```
 
-Exclusions use the same formats as targets.
+Exclusions support all the same formats as targets.
 
-# **3. DNS Safety Check**
+---
 
-When you include any DNS hostname, SonarTrace will:
+# 3. DNS Safety Check
+
+When SonarTrace detects DNS hostnames, it will:
 
 1. Detect your system’s DNS resolver
-2. Display it
+
+2. Display the resolver address
+
 3. Ask for confirmation:
+
+   ```
    Proceed using this resolver? (y/N)
-4. Stop the scan if you press Enter
+   ```
 
-This helps prevent scanning the wrong hosts due to DNS issues.
+4. Stop automatically if you press Enter (default No)
 
-# **4. Custom Output Filename**
+This prevents accidental scans caused by DNS misconfiguration.
 
-By default, SonarTrace creates a file named:
+---
 
+# 4. Custom Output Filename
+
+By default, SonarTrace creates reports using:
+
+```
 sonartrace_report_YYYYMMDD_HHMM_UTC.md
+```
 
-To choose your own filename:
+To specify your own filename:
 
+```bash
 python -m src 192.168.1.10 -o myreport.md
+```
 
-# **5. Report Structure**
+---
 
-Each scanned host gets its own section in the report.
+# 5. Report Structure
 
-### Verified Information includes:
+Each scanned host includes:
+
+### Verified Information
 
 * IP address
 * Hostname
-* Domain
-* Open services
+* Domain (if applicable)
+* Active services
 * OS type
-* Windows-specific info (if found)
+* Windows-specific info (if detected)
 
-### Unverified Information:
+### Unverified Information
 
-Possible OS versions or other guesses based on banners.
+* Possible OS guesses
+* Version hints from Nmap banners
 
-### Commands and Raw Output:
+### Commands & Raw Output
 
-SonarTrace shows the exact scan command used, followed by the full raw output. Example:
+SonarTrace prints the **exact Nmap commands** it used, followed by their **full raw output**.
 
+Example:
+
+```
 Command: nmap -sV -sC -p- 192.168.1.10
-[Full Nmap output appears below this in the report]
+[Raw Nmap output here]
+```
 
-# **6. Ethical Reminder**
+This ensures full traceability of the enumeration process.
 
-Only use SonarTrace on systems you own or have explicit permission to test.
+---
+
+# 6. Ethical Reminder
+
+SonarTrace is a penetration testing tool.
+Only use it on systems you **own** or have **explicit permission** to test.
+
+Unauthorized scanning is prohibited and may violate school, workplace, or legal guidelines.
