@@ -1,15 +1,24 @@
-This docdocument describes what each of us worked on for the Final project.
+# **SonarTrace – Contributions**
 
-Yung - Backend/Core Engine
+This page explains what each of us worked on for the final project.
 
- I worked on the project's backend. This covers everything related to processing targets, such as excluding out-of-scope hosts, broader CIDR ranges (Classless Inter-Domain Routing), ensuring DNS safety (Domain Name System), and performing actual scans using Nmap. I created the main framework, which prepares targets, calls Nmap properly, handles errors, and controls all logging.  I created the GitHub repository and organized the project's structure.
+---
 
-Files I worked on:
-targets.py
-utils.py
-enumerator.py
-__main__.py
-exceptions.py
-logger_setup.py
-config.py
-results_objects.py
+## **Yung
+
+I worked on the project's backend. So, my role was to ensure that the program could understand targets, filter out everything that shouldn't be scanned, and execute Nmap properly. I also handled the parts that prepare the scan, run it, and deal with any mistakes that may occur.
+
+I configured the target parser, CIDR handling (Classless Inter-Domain Routing), DNS safety checks (Domain Name System), and scanning engine, which delivers everything to Nmap.  I also configured all logging and error handling.  In addition, I set up the GitHub repository and the project folder structure.
+
+### **Files I worked on**
+
+* `targets.py`
+* `utils.py`
+* `enumerator.py`
+* `__main__.py`
+* `exceptions.py`
+* `logger_setup.py`
+* `config.py`
+* `result_objects.py`
+
+---
