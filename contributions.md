@@ -4,7 +4,7 @@ This page explains what each of us worked on for the final project.
 
 ---
 
-## **Yung
+## Yung
 
 I worked on the project's backend. So, my role was to ensure that the program could understand targets, filter out everything that shouldn't be scanned, and execute Nmap properly. I also handled the parts that prepare the scan, run it, and deal with any mistakes that may occur.
 
