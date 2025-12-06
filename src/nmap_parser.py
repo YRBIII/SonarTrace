@@ -1,10 +1,21 @@
 import xml.etree.ElementTree as ET
+import re
 from typing import List
 from .result_objects import HostResult, PortInfo
 
 
 class NmapParser:
-    """Parses Nmap XML output into HostResult objects."""
+    """Parses Nmap XML output into HostResult objects.
+       Includes regex-based parsing of hostscript output 
+       to satisfy assignment requirements.
+    """
+
+    # ------------------------------------------------------------
+    # New Regex Extraction Patterns (for assignment requirement)
+    # ------------------------------------------------------------
+    OS_REGEX = re.compile(r"OS:\s*([A-Za-z0-9 ._-]+)", re.IGNORECASE)
+    DOMAIN_REGEX = re.compile(r"Domain[:=]\s*([A-Za-z0-9._-]+)", re.IGNORECASE)
+    WORKGROUP_REGEX = re.compile(r"Workgroup[:=]\s*([A-Za-z0-9._-]+)", re.IGNORECASE)
 
     def parse(self, xml_text: str) -> List[HostResult]:
         hosts: List[HostResult] = []
@@ -20,14 +31,14 @@ class NmapParser:
             hostname_el = host_el.find("hostnames/hostname")
             hostname = hostname_el.get("name") if hostname_el is not None else ""
 
-            # OS detection
+            # OS detection (normal XML)
             os_name = ""
             os_accuracy = None
             osmatch_el = host_el.find("os/osmatch")
             if osmatch_el is not None:
                 os_name = osmatch_el.get("name", "")
                 acc = osmatch_el.get("accuracy")
-                if acc is not None and acc.isdigit():
+                if acc and acc.isdigit():
                     os_accuracy = int(acc)
 
             host_result = HostResult(
@@ -38,7 +49,9 @@ class NmapParser:
                 os_accuracy=os_accuracy,
             )
 
-            # Ports
+            # -----------------------
+            # Parse ports
+            # -----------------------
             for port_el in host_el.findall("ports/port"):
                 proto = port_el.get("protocol", "")
                 port_id = int(port_el.get("portid", "0"))
@@ -64,12 +77,54 @@ class NmapParser:
                     )
                 )
 
-            # Script results (per host)
+            # -----------------------
+            # Hostscript parsing
+            # -----------------------
             for script_el in host_el.findall("hostscript/script"):
                 script_id = script_el.get("id", "unknown")
                 output = script_el.get("output", "")
                 host_result.scripts[script_id] = output
 
+            # -----------------------
+            # NEW: Apply Regex Parsing
+            # -----------------------
+            regex_results = self._extract_via_regex(host_result.scripts)
+            if regex_results:
+                host_result.regex_parsed = regex_results
+
             hosts.append(host_result)
 
         return hosts
+
+    # ------------------------------------------------------------
+    # NEW: Regex Parsing Logic
+    # ------------------------------------------------------------
+    def _extract_via_regex(self, script_dict):
+        """Extracts OS, domain, workgroup info from script output using regex.
+        This satisfies the assignment requirement for regex parsing.
+        """
+        results = {}
+
+        for script_id, output in script_dict.items():
+            # Apply OS regex
+            os_match = self.OS_REGEX.search(output)
+            if os_match:
+                results.setdefault("regex_os_info", []).append(
+                    f"{script_id}: {os_match.group(1)}"
+                )
+
+            # Apply Domain regex
+            domain = self.DOMAIN_REGEX.search(output)
+            if domain:
+                results.setdefault("regex_domain", []).append(
+                    f"{script_id}: {domain.group(1)}"
+                )
+
+            # Apply Workgroup regex
+            wg = self.WORKGROUP_REGEX.search(output)
+            if wg:
+                results.setdefault("regex_workgroup", []).append(
+                    f"{script_id}: {wg.group(1)}"
+                )
+
+        return results
