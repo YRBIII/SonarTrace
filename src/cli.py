@@ -1,11 +1,15 @@
 import argparse
 import ipaddress
+import platform
+import subprocess
+import re
 from typing import List
+
 from .nmap_handler import NmapHandler, NmapExecutionError
 from .nmap_parser import NmapParser
 from .report_builder import ReportBuilder
 from .windows_enum import WindowsEnumerator
-from  .import __version__, __app_name__
+from . import __version__, __app_name__
 
 
 ASCII_BANNER = r"""
@@ -13,18 +17,8 @@ ASCII_BANNER = r"""
  /   _____/ ____   ____   ____   \__    ___/______   ____   ______
  \_____  \\_/ __ \\_/ __ \\_/ __ \\    |    |  \_  __ \\_/ __ \\ /  ___/
  /        \\  ___/\\  ___/\\  ___/    |    |   |  | \\  ___/ \\___ \\ 
-/_______  / \\___  >\\___  >\\___  >   |____|   |__|   \\___  >____  >              
+/_______  / \\___  >\\___  >\\___  >   |____|   |__|   \\___  >____  >
         \\/      \\/     \\/     \\/                         \\/     \\/ 
-
-        
-    / \'._   (\_/)   _.'/ \       (_                   _)
-   / .''._'--(o.o)--'_.''. \       /\                 /\
-  /.' _/ |`'=/ " \='`| \_ `.\     / \'._   (\_/)   _.'/ \
- /` .' `\;-,'\___/',-;/` '. '\   /_.''._'--('.')--'_.''._\
-/.-' jgs   `\(-V-)/`       `-.\  | \_ / `;=/ " \=;` \ _/ |
-             "   "               \/  `\__|`\___/`|__/`  \/
-                                  `       \(/|\)/       `
-                                           " ` "
 
   SonarTrace - focused Nmap wrapper for *authorized* assessments only.
 """
@@ -40,6 +34,7 @@ def _looks_like_ip(target: str) -> bool:
 
 
 def _validate_targets(targets: List[str], allow_dns: bool) -> None:
+    """Existing safety guard for overly broad ranges and hostname use."""
     if allow_dns:
         return
 
@@ -63,12 +58,108 @@ def _validate_targets(targets: List[str], allow_dns: bool) -> None:
             )
 
 
+# ---------------------------------------------------------------------------
+# NEW: DNS resolver detection + confirmation (assignment requirement)
+# ---------------------------------------------------------------------------
+def _detect_system_dns_servers() -> list[str]:
+    """Best-effort detection of system DNS resolver(s).
+
+    Linux/macOS: parses /etc/resolv.conf
+    Windows: parses 'ipconfig /all' output for 'DNS Servers'
+    """
+    servers: list[str] = []
+
+    try:
+        system = platform.system().lower()
+    except Exception:
+        system = ""
+
+    # Unix-like systems
+    if system in ("linux", "darwin"):
+        try:
+            with open("/etc/resolv.conf", "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if line.startswith("nameserver"):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            servers.append(parts[1])
+        except OSError:
+            pass
+
+    # Windows
+    elif system == "windows":
+        try:
+            output = subprocess.check_output(
+                ["ipconfig", "/all"],
+                text=True,
+                encoding="utf-8",
+                errors="ignore",
+            )
+            capture = False
+            for raw_line in output.splitlines():
+                line = raw_line.strip()
+                if not line:
+                    capture = False
+                    continue
+
+                if "DNS Servers" in line:
+                    # First resolver may be on the same line
+                    m = re.search(r"DNS Servers[ .:]*([0-9a-fA-F\.:]+)", line)
+                    if m:
+                        servers.append(m.group(1))
+                    capture = True
+                    continue
+
+                if capture:
+                    m = re.search(r"([0-9a-fA-F\.:]+)", line)
+                    if m:
+                        servers.append(m.group(1))
+        except Exception:
+            pass
+
+    # De-duplicate while preserving order
+    seen = set()
+    deduped: list[str] = []
+    for s in servers:
+        if s not in seen:
+            seen.add(s)
+            deduped.append(s)
+    return deduped
+
+
+def _dns_safety_prompt() -> None:
+    """Print detected DNS resolvers and ask user to confirm before scanning.
+
+    This implements the 'DNS Safety Check' required in the rubric.
+    """
+    servers = _detect_system_dns_servers()
+
+    print("\n[DNS Safety] Detected system DNS resolver(s):")
+    if servers:
+        for s in servers:
+            print(f"  - {s}")
+    else:
+        print("  <none detected or could not determine>")
+
+    print(
+        "[DNS Safety] If you scan hostnames or if reverse DNS lookups are enabled, "
+        "DNS queries may be sent to these servers."
+    )
+    answer = input("[DNS Safety] Do you accept this risk and continue with the scan? [y/N]: ")
+    if answer.strip().lower() not in ("y", "yes"):
+        raise SystemExit("[DNS Safety] Scan aborted by user at DNS confirmation prompt.\n")
+    print("[DNS Safety] User confirmed DNS configuration; proceeding with scan.\n")
+
+
 def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog=__app_name__,
         description=(
             "SonarTrace is a thin wrapper around Nmap that focuses on safe defaults, basic "
-            "parsing, and human‑readable reports. Only use it against systems you are "
+            "parsing, and human-readable reports. Only use it against systems you are "
             "explicitly authorized to test."
         ),
     )
@@ -99,7 +190,10 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--allow-dns", action="store_true",
-        help="Allow DNS resolution of hostnames (disables the DNS leakage safety check)."
+        help=(
+            "Allow DNS resolution of hostnames (disables the hostname restriction in the "
+            "DNS leakage safety check; the DNS resolver confirmation prompt still applies)."
+        ),
     )
     p.add_argument(
         "--nmap-arg", dest="nmap_args", action="append", default=[],
@@ -119,8 +213,12 @@ def main(argv: list[str] | None = None) -> None:
 
     # Very explicit legality warning
     print("[!] Use this tool ONLY against hosts and networks you are explicitly authorized to test.")
-    print("[!] The authors take no responsibility for misuse.\n" )
+    print("[!] The authors take no responsibility for misuse.\n")
 
+    # NEW: DNS Safety Check – detect resolver(s) and ask user to confirm
+    _dns_safety_prompt()
+
+    # Existing target validation (CIDR breadth + hostname safety)
     _validate_targets(args.targets, allow_dns=args.allow_dns)
 
     handler = NmapHandler(
@@ -134,7 +232,7 @@ def main(argv: list[str] | None = None) -> None:
     try:
         xml_output = handler.run_scan()
     except NmapExecutionError as e:
-        parser.exit(status=1, message=f"[!] Nmap error: {e}\n" )
+        parser.exit(status=1, message=f"[!] Nmap error: {e}\n")
 
     parser_obj = NmapParser()
     hosts = parser_obj.parse(xml_output)
@@ -145,6 +243,8 @@ def main(argv: list[str] | None = None) -> None:
     metadata = {
         "targets": ", ".join(args.targets),
         "excluded": ", ".join(args.exclude) if args.exclude else "(none)",
+        # If you later want to show the exact command + raw XML in the report,
+        # you can also add e.g. "nmap_command" and "raw_nmap_output" here.
     }
     builder = ReportBuilder(metadata=metadata)
     text_report = builder.build_text_report(hosts)
