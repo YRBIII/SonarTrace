@@ -48,22 +48,29 @@ class ReportBuilder:
         lines.append("")
 
         # ----------------------------------------------------
-        # Command Output Section (rubric requirement)
+        # Command Output Section (rubric formatting compliant)
         # ----------------------------------------------------
         lines.append("Command Output")
         lines.append("-" * 60)
+
         nmap_cmd = self.metadata.get("nmap_command")
         raw_output = self.metadata.get("raw_nmap_output")
 
-        lines.append(f"Nmap Command: {nmap_cmd or '<not provided>'}")
+        # Change: Wrap command in single-line Markdown code block
+        # (Required by project rubric)
+        lines.append("Command:")
+        lines.append(f"`{nmap_cmd or '<not provided>'}`")
         lines.append("")
+
+        # Change: Wrap raw output in fenced code block
+        # (Required by project rubric)
         lines.append("Full Raw Nmap Output:")
+        lines.append("```")
         if raw_output:
-            for ln in str(raw_output).splitlines():
-                lines.append(f"  {ln}")
+            lines.append(str(raw_output))
         else:
-            lines.append("  <raw Nmap XML/text output not captured>")
-        lines.append("")
+            lines.append("<raw Nmap XML/text output not captured>")
+        lines.append("```")
         lines.append("")
 
         # ----------------------------------------------------

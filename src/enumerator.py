@@ -1,82 +1,53 @@
 """
-enumerator.py – Backend scanning engine for SonarTrace.
-Handles:
-- Expanding targets
-- Applying exclusions
-- Running Nmap scans
+enumerator.py – Central enumeration orchestrator for SonarTrace.
+
+This module coordinates:
+- Target handling
+- Nmap execution
+- XML parsing
+- Windows-specific enumeration
+
+NOTE:
+This file is intentionally used by __main__.py as the single
+enumeration entry point to avoid duplicated scan logic.
 """
 
-from typing import Dict, List
+from typing import List, Tuple
 
-# Pull in your target parsing code
-from targets import separate_targets
+from .nmap_handler import NmapHandler, NmapExecutionError
+from .nmap_parser import NmapParser
+from .windows_enum import WindowsEnumerator
+from .logger_setup import get_logger
 
-# Pull in utilities like CIDR expansion and dedupe
-from utils import expand_cidr, dedupe
-
-# Functions that actually run Nmap
-from nmap_handler import tcp_full, os_detect
-
-# Logger to print helpful information during scans
-from logger_setup import get_logger
-
-log = get_logger("engine")  # Create a logger named "engine"
+log = get_logger("enumerator")
 
 
-def expand_all(target_raw: str, exclude_raw: str) -> List[str]:
+def enumerate_hosts(
+    handler: NmapHandler,
+) -> Tuple[List, str, str]:
     """
-    Turns input strings into a final list of scan targets.
-    Steps:
-    1. Separate single targets and CIDRs
-    2. Expand CIDR ranges
-    3. Apply exclusions (also expanded)
-    4. Remove duplicates
+    Runs the full enumeration pipeline and returns:
+    - Parsed HostResult objects
+    - Raw Nmap XML output
+    - Exact Nmap command used (string)
     """
-    # Split targets into single hosts and CIDR ranges
-    t_singles, t_cidrs = separate_targets(target_raw)
-    e_singles, e_cidrs = separate_targets(exclude_raw)
 
-    hosts = []
+    log.info("Starting centralized enumeration pipeline")
 
-    # Add single items (IPs or DNS)
-    for t in t_singles:
-        hosts.append(t)
+    # Run Nmap once
+    raw_xml_output = handler.run_scan()
 
-    # Expand CIDR ranges into individual host IPs
-    for cidr in t_cidrs:
-        hosts.extend(expand_cidr(cidr))
+    # Capture the exact command used (rubric requirement)
+    executed_command = " ".join(handler.build_command())
 
-    # Build exclusion list
-    excludes = set()
+    # Parse XML into HostResult objects
+    parser = NmapParser()
+    hosts = parser.parse(raw_xml_output)
 
-    for e in e_singles:
-        excludes.add(e)
+    # Perform Windows-specific enumeration
+    win_enum = WindowsEnumerator()
+    win_enum.enumerate(hosts)
 
-    for cidr in e_cidrs:
-        excludes.update(expand_cidr(cidr))
+    log.info("Enumeration pipeline completed successfully")
 
-    # Remove excluded hosts and duplicates
-    final = [h for h in dedupe(hosts) if h not in excludes]
-    return final
-
-
-def scan_host(host: str) -> Dict:
-    """
-    Runs two Nmap scans:
-    - Full TCP service scan
-    - OS detection scan
-    Returns a dictionary with raw output for later parsing.
-    """
-    log.info("Scanning %s", host)
-
-    # Run full service scan (captures ports & banners)
-    raw_services = tcp_full(host)
-
-    # Run OS detection scan
-    raw_os = os_detect(host)
-
-    return {
-        "ip": host,
-        "raw_service_scan": raw_services,
-        "raw_os_scan": raw_os
-    }
+    return hosts, raw_xml_output, executed_command
