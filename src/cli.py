@@ -20,7 +20,7 @@ ASCII_BANNER = r"""
 /_______  / \\___  >\\___  >\\___  >   |____|   |__|   \\___  >____  >
         \\/      \\/     \\/     \\/                         \\/     \\/ 
 
-  SonarTrace - focused Nmap wrapper for *authorized* assessments only.
+  SonarTrace - focused Nmap wrapper for *authorized* assessments only!
 """
 
 
