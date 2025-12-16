@@ -124,8 +124,10 @@ class ReportBuilder:
             # -------- Unverified / Heuristic Section --------
             lines.append("### Unverified / Heuristic Information")
             lines.append("")
-            if host.heuristics:
-                for h in host.heuristics:
+
+            heuristics = getattr(host, "heuristics", None)
+            if heuristics:
+                for h in heuristics:
                     lines.append(f"- {h}")
             else:
                 lines.append("None identified during this scan.")
@@ -149,10 +151,11 @@ class ReportBuilder:
                 lines.append("")
 
             # -------- Advisory Output --------
-            if host.advisories:
+            advisories = getattr(host, "advisories", None)
+            if advisories:
                 lines.append("### Script / Advisory Output")
                 lines.append("")
-                for adv in host.advisories:
+                for adv in advisories:
                     lines.append(f"- {adv}")
                 lines.append("")
 
