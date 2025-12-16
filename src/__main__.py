@@ -59,8 +59,14 @@ def main():
         "raw_nmap_output": raw_xml_output,  # REQUIRED for rubric
     }
 
-    builder = ReportBuilder(metadata=metadata)
-    text_report = builder.build_text_report(hosts)
+    builder = ReportBuilder()
+    text_report = builder.build_text_report(
+        hosts=hosts,
+        targets=args.targets,
+        excludes=args.exclude,
+        nmap_command=executed_command,
+        raw_output=raw_xml_output
+    )
 
     # ----------------------------------------
     # DEFAULT OUTPUT FILE (UTC, rubric-required)
