@@ -13,12 +13,20 @@ from . import __version__, __app_name__
 
 
 ASCII_BANNER = r"""
-  _________                       ___________                     
- /   _____/ ____   ____   ____   \__    ___/______   ____   ______
- \_____  \\_/ __ \\_/ __ \\_/ __ \\    |    |  \_  __ \\_/ __ \\ /  ___/
-/        \\  ___/\\  ___/\\  ___/    |    |   |  | \\  ___/ \\___ \\ 
-/_______  / \\___  >\\___  >\\___  >   |____|   |__|   \\___  >____  >
-        \\/      \\/     \\/     \\/                         \\/     \\/ 
+     =/\                 /\=
+    / \'._   (\_/)   _.'/ \
+   / .''._'--(o.o)--'_.''. \
+  /.' _/ |`'=/ " \='`| \_ `.\
+ /` .' `\;-,'\___/',-;/` '. '\
+/.-'        `\(-V-)/`            `-.
+              "   "
+
+ ███████╗ ██████╗ ███╗   ██╗ █████╗ ██████╗ ████████╗██████╗  █████╗  ██████╗ ███████╗
+ ██╔════╝██╔═══██╗████╗  ██║██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗██╔════╝ ██╔════╝
+ ███████╗██║   ██║██╔██╗ ██║███████║██████╔╝   ██║   ██████╔╝███████║██║      █████╗  
+ ╚════██║██║   ██║██║╚██╗██║██╔══██║██╔══██╗   ██║   ██╔══██╗██╔══██║██║      ██╔══╝  
+ ███████║╚██████╔╝██║ ╚████║██║  ██║██║  ██║   ██║   ██║  ██║██║  ██║╚██████╔ ███████╗
+ ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
 
   SonarTrace - focused Nmap wrapper for *authorized* assessments only!
 """
@@ -158,11 +166,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog=__app_name__,
         description=(
-            "SonarTrace is a thin wrapper around Nmap that focuses on safe defaults, basic "
-            "parsing, and human-readable reports. Only use it against systems you are "
-            "explicitly authorized to test."
-        ),
-    )
+            ASCII_BANNER
+            + "\nSonarTrace is a thin wrapper around Nmap that focuses on safe defaults, "
+            "basic parsing, and human-readable reports.\n"
+            "Only use it against systems you are explicitly authorized to test."
+    ),
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+)
+
     p.add_argument(
         "targets",
         nargs="+",
@@ -207,8 +218,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> None:
-    print(ASCII_BANNER)
     parser = _build_arg_parser()
+    print(ASCII_BANNER)
     args = parser.parse_args(argv)
 
     # Very explicit legality warning
